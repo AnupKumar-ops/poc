@@ -26,7 +26,7 @@ pipeline {
       
      stage('load variables') {
            steps {
-              loadEnvironmentVariables("${WORKSPACE}/CLIENT.properties")
+              loadEnvironmentVariables('CLIENT.properties')
            }
      }
               
@@ -46,7 +46,7 @@ pipeline {
                 def uploadSpec = """{
                                       "files": [
                                           {
-                                             "pattern": "${WORKSPACE}/*.war",
+                                             "pattern": '*.war',
                                              "target": "${VENDOR_NAME}/${PRODUCT}/${VERSION}/"
                                           }
                                        ]
