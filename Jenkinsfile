@@ -1,37 +1,53 @@
+def loadEnvironmentVariables(path){
+    def props = readProperties  file: path
+    keys= props.keySet()
+    for(key in keys) {
+        value = props["${key}"]
+        env."${key}" = "${value}"
+    }
+} 
+
 pipeline {
     
     environment {
+        SOURCE_CREDENTIAL = "github"
+        SOURCE_REPO = "https://github.com/AnupKumar-ops/poc.git"
         DockerImage = ""
     }
-    
-   def loadEnvironmentVariables(path) {
-       def props = readProperties file: path
-       keys= props.keyset()
-       for (key in keys) {
-           value = props["${key}"]
-           env."${key}" = "${value}"
-       }
-   }
    
   agent any
 
   stages {
      stage('SCM checkout') {
            steps {
-              git credentialsId: "${SourceCredentials}", url: "${SourceRepo}"
-              loadEnvironmentVariables('CLIENT.properties')
+              git credentialsId: "${SOURCE_CREDENTIAL}", url: "${SOURCE_REPO}"
+           }  
+     }
+      
+     stage('load variables') {
+           steps {
+              loadEnvironmentVariables("${WORKSPACE}/CLIENT.properties")
            }
+     }
+              
+     
+     stage('checksum') {
+         steps {
+             script {
+                 fingerprint '**/*.war'
+             }
+         }
      }
 
      stage('Upload to JFrog') { 
            steps {
              script {
-                def server = Artifactory.newServer url: "${ArtifactoryUrl}", credentialsId: "${ArtifactoryCredentials}"
+                def server = Artifactory.newServer url: "${ARTIFACTORY_URL}", credentialsId: "${ARTIFACTORY_CREDENTIALS}"
                 def uploadSpec = """{
                                       "files": [
                                           {
                                              "pattern": "${WORKSPACE}/*.war",
-                                             "target": "${VendorName}/${Product}/${Version}/"
+                                             "target": "${VENDOR_NAME}/${PRODUCT}/${VERSION}/"
                                           }
                                        ]
                                   }"""
@@ -42,7 +58,7 @@ pipeline {
      stage('Build image') {
          steps {
              script {
-               dockerImage = docker.build "${Registry}" + ":$BUILD_NUMBER"
+               dockerImage = docker.build "${REGISTRY}" + ":$BUILD_NUMBER"
              }
          }
      }
@@ -50,7 +66,7 @@ pipeline {
      stage('Push Image') {
          steps {
              script {
-                 docker.withRegistry( '', "${RegistryCredential}" ) {
+                 docker.withRegistry( '', "${REGISTRY_CREDENTIAL}" ) {
                      dockerImage.push()
                  } 
              }
