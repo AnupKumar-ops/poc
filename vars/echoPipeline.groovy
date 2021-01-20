@@ -1,6 +1,6 @@
 def call (body) {
     def config = [:]
-    body.resolveStrategy = closure.Delegate_First
+    body.resolveStrategy = Closure.Delegate_First
     body.delegate = config
     body()
     
