@@ -1,13 +1,13 @@
 #!/usr/bin/env groovy
 
-def call(String name = 'human') {
-    echo "Hello, ${name}."
+def call() {
+    echo "Hello"
 }
 
 def VendorName(){
     echo "Cisco"
 }
-def Product(') {
+def Product() {
     echo "WarFiles"
 }
 def Version() {
@@ -17,7 +17,7 @@ def ArtifactoryUrl() {
     echo "http://34.71.26.245:8082/artifactory"
 }
 def ArtifactoryCredentials() {
-    echo "jfogid."
+    echo "jfogid"
 }
 def App() {
     echo "app2" 
