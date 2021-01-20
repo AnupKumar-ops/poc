@@ -1,36 +1,76 @@
-#!/usr/bin/env groovy
+def call (body) {
+    def config = [:]
+    body.resolveStrategy = closure.Delegate_First
+    body.delegate = config
+    body()
+    
+pipeline {
+    
+    environment {
+        DockerImage = ""
+    }
+    
+   
+  agent any
+ 
+  triggers { 
+     githubPush()
+  }
 
-def call() {
-    echo "Hello"
-}
+  stages {
+     stage('SCM checkout') {
+           steps {
+              git credentialsId: "${config.SourceCredentials}", url: "${config.SourceRepo}"
+           }
+     }
+   
+     stage('checksum') {
+         steps {
+             script {
+                 fingerprint '**/*.war'
+             }
+         }
+     }
+     stage('Upload to JFrog') { 
+           steps {
+             script {
+                def server = Artifactory.newServer url: "${config.ArtifactoryUrl}", credentialsId: "${config.ArtifactoryCredentials}"
+                def uploadSpec = """{
+                                      "files": [
+                                          {
+                                             "pattern": "${config.WORKSPACE}/*.war",
+                                             "target": "${config.VendorName}/${config.Product}/${config.Version}/"
+                                          }
+                                       ]
+                                  }"""
+                server.upload spec: uploadSpec
+              }
+            }
+     }
+     stage('Build image') {
+         steps {
+               script {
+               dockerImage = docker.build "${config.Registry}" + ":$BUILD_NUMBER"
+               
+             }
+         }
+     }
+     
+     stage('Push Image') {
+         steps {
+             script {
+                 docker.withRegistry( '', "${config.RegistryCredential}" ) {
+                     dockerImage.push()
+                 } 
+             }
+         }           
+     }
 
-def VendorName(){
-    echo "Cisco"
-}
-def Product() {
-    echo "WarFiles"
-}
-def Version() {
-    echo "vnf_v1.1"
-}
-def ArtifactoryUrl() {
-    echo "http://34.71.26.245:8082/artifactory"
-}
-def ArtifactoryCredentials() {
-    echo "jfogid"
-}
-def App() {
-    echo "app2" 
-}        
-def SourceRepo() {
-    echo "https://github.com/AnupKumar-ops/jenkinsdemo"
-}       
-def SourceCredentials() {
-    echo "github"
-}
-def Registry() {
-    echo "docker.io/963287/myrepo"
-}   
-def RegistryCredential() {
-    echo "docker"
+  }
+ 
+   post { 
+        failure { 
+            echo 'Build Pipeline NOK'
+        }
+    }
 }
