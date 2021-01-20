@@ -38,7 +38,7 @@ pipeline {
                 def uploadSpec = """{
                                       "files": [
                                           {
-                                             "pattern": "${config.WORKSPACE}/*.war",
+                                             "pattern": "*.war",
                                              "target": "${config.VendorName}/${config.Product}/${config.Version}/"
                                           }
                                        ]
